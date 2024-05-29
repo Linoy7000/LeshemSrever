@@ -1,17 +1,23 @@
-
-# Virtual Environment
-/venv/
-
-# Django
+# Django specific
 *.log
 *.pot
 *.pyc
 __pycache__/
-local_settings.py
-*.log
+db.sqlite3
+media/
+
+# Ignore static files
+/static/
+
+# Ignore environment variables
+.env
+
+# Ignore virtual environments
+venv/
+
+# Ignore IDE/editor specific files
+.idea/
 
 # Byte-compiled / optimized / DLL files
-__pycache__/
 *.py[cod]
 
-.idea/
