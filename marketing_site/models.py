@@ -12,7 +12,7 @@ class Product(models.Model):
         (4, 'שונות')
     ]
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
-    category = models.CharField(blank=False, choices=CATEGORY_CHOICES, max_length=50)
+    category = models.PositiveIntegerField(blank=False, choices=CATEGORY_CHOICES)
     name = models.CharField(max_length=255, blank=False)
     link = models.CharField(blank=False, max_length=150)
     price = models.FloatField(blank=True, null=True)
@@ -32,7 +32,7 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     discount_percentage = models.FloatField(blank=True, default=0.00)
     discount = models.FloatField(blank=True, default=0.00)
-    status = models.CharField(max_length=50, blank=False, default=1)
+    status = models.PositiveIntegerField(blank=False, default=1, choices=STATUS_CHOICES)
     supply = models.DateField(blank=True, null=True)
     close_date = models.DateTimeField(blank=True, null=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, blank=True, null=True)
@@ -60,10 +60,10 @@ class Contact(models.Model):
     name = models.CharField(max_length=50)
     phone = models.CharField(max_length=20)
     email = models.EmailField(max_length=50)
-    subject = models.CharField(max_length=255, choices=SUBJECT_CHOICES)
+    subject = models.PositiveIntegerField(choices=SUBJECT_CHOICES)
     message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=50, choices=STATUS_CHICES, default=1)
+    status = models.PositiveIntegerField(choices=STATUS_CHICES, default=1)
 
     def __str__(self):
         return f'{self.name} - {self.subject}'
