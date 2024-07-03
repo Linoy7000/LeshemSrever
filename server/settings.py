@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'marketing_site',
     'shared_models',
-    'simulator'
+    'simulator',
+    'rest_framework'
 ]
 
 MIDDLEWARE = [
