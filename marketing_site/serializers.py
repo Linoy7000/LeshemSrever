@@ -15,7 +15,7 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class ContactSerializer(serializers.Serializer):
+class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contact
         fields = '__all__'
