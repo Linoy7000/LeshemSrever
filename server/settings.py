@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'marketing_site',
     'shared_models',
     'simulator',
+    'bills',
     'rest_framework'
 ]
 
