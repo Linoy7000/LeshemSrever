@@ -55,4 +55,4 @@ class TrainingData(models.Model):
     height = models.FloatField(blank=False, null=False)
 
     def __str__(self):
-        return f"{int(self.container_width)}/{int(self.container_height)} | {self.element}"
+        return f"{int(self.container_width)}/{int(self.container_height)} | {self.element} | [{self.position_x}, {self.position_y}, {self.width}, {self.height}]"

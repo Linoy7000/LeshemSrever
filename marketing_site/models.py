@@ -29,7 +29,7 @@ class Product(models.Model):
     likes = models.PositiveIntegerField(default=0)
 
     def __str__(self):
-        return f"{self.get_category_display()} - {self.id}"
+        return f"{self.get_category_display()} - {self.link}"
 
 
 class Order(models.Model):

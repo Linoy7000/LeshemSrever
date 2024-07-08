@@ -1,5 +1,6 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework import viewsets
+from rest_framework.response import Response
 
 from marketing_site.models import Product, Order, Contact
 from marketing_site.serializers import ProductSerializer, OrderSerializer, ContactSerializer
@@ -8,6 +9,7 @@ from marketing_site.serializers import ProductSerializer, OrderSerializer, Conta
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    lookup_field = 'uuid'
 
     def get_queryset(self):
         queryset = Product.objects.all()
@@ -23,6 +25,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    lookup_field = 'uuid'
 
     def get_queryset(self):
         queryset = Order.objects.all()
@@ -35,3 +38,4 @@ class OrderViewSet(viewsets.ModelViewSet):
 class ContactViewSet(viewsets.ModelViewSet):
     queryset = Contact.objects.all()
     serializer_class = ContactSerializer
+    lookup_field = 'uuid'
