@@ -46,7 +46,9 @@ INSTALLED_APPS = [
     'corsheaders',
     'marketing_site',
     'shared_models',
-    'simulator'
+    'simulator',
+    'bills',
+    'rest_framework'
 ]
 
 MIDDLEWARE = [
