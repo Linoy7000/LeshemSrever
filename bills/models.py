@@ -2,6 +2,8 @@ import datetime
 
 import uuid
 from django.db import models
+from django.utils import timezone
+
 from marketing_site.models import Order
 from django.core.validators import MinValueValidator, MaxValueValidator
 
@@ -32,11 +34,8 @@ class Bill(models.Model):
     record_type = models.CharField(blank=False, choices=TYPE_RECORD, default=1, max_length=50)
     quantity = models.PositiveIntegerField(blank=True, default=1)
     price = models.FloatField(blank=False)
-    discount_percentage = models.FloatField(
-        default=0.0,
-        validators=[MinValueValidator(0), MaxValueValidator(100)]
-    )
+    discount_percentage = models.FloatField(default=0.0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     comments = models.TextField(max_length=255)
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='orders')
-    date = models.DateField(default=datetime.datetime.now())
+    date = models.DateField(default=timezone.now)
     payment_method = models.CharField(blank=False, choices=PAYMENT_METHOD, default=1, max_length=50)
