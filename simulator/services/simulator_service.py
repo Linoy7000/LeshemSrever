@@ -1,82 +1,122 @@
-import numpy as np
-from sklearn.linear_model import LinearRegression
-from simulator.models import TrainingData, Type
+
+from server.constants import DIMENSIONS, SimulatorConstants
+from simulator.models import Element
+from simulator.services.training_service import Training
 
 
 class Simulator:
 
-    def __init__(self, design):
+    def __init__(self, elements_input, container_width, container_height, design):
+        self.elements = Element.objects.filter(id__in=elements_input)
+        self.container_width = container_width
+        self.container_height = container_height
+        self.design = design
+        self.elements_to_display = []
 
-        training_data = TrainingData.objects.order_by('id').filter(product__id=design)
+    def predict(self):
+        trainig = Training(self.design)
+        for e in self.elements:
+            [pos_x, width], [pos_y, height] = trainig.predict(self.container_width, self.container_height, e.id)
+            self.elements_to_display.append({
+                'element_data': e,
+                'url': e.get_image_url(),
+                'pos_x': pos_x,
+                'pos_y': pos_y,
+                'width': width,
+                'height': height
+            })
 
-        container_width = np.array(training_data.values_list('container_width', flat=True))
-        container_height = np.array(training_data.values_list('container_height', flat=True))
-        element_id = np.array(training_data.values_list('element', flat=True))
-        position_x = np.array(training_data.values_list('position_x', flat=True))
-        position_y = np.array(training_data.values_list('position_y', flat=True))
-        width = np.array(training_data.values_list('width', flat=True))
-        height = np.array(training_data.values_list('height', flat=True))
+    def calc_aspect_ratio(self, predicted_width, predicted_height, element_width, element_height, dimension):
+        """ Calculate the aspect ratio by the primary dimension """
+        if dimension == DIMENSIONS.WIDTH:
+            w, h = predicted_width, element_height * predicted_width / element_width
 
-        # >>> Width <<< #
-        # Independent Variables
-        X_width = np.column_stack((container_width, element_id))
-        # Dependent Variables
-        Y_width = np.column_stack((position_x, width))
+        elif dimension == DIMENSIONS.HEIGHT:
+            w, h = element_width * predicted_height / element_height, predicted_height
 
-        # >>> Height <<< #
-        # Independent Variables
-        X_height = np.column_stack((container_height, element_id))
-        # Dependent Variables
-        Y_height = np.column_stack((position_y, height))
+        return w, h
 
-        unique_element_values = np.unique(element_id)
+    def set_aspect_ratio(self, element):
+        """ Set aspect ratio values in elements_to_display """
+        w, h = self.calc_aspect_ratio(element['width'], element['height'], element['element_data'].width,
+                                      element['element_data'].height, element['element_data'].primary_dimensions)
+        element['width'] = int(w)
+        element['height'] = int(h)
 
-        self.models_width = {value: None for value in unique_element_values.tolist()}
-        self.models_height = {value: None for value in unique_element_values.tolist()}
+    def convert_position_values(self, pos_x, pos_y, width, height):
+        """ Convert position values from an origin-centered axis to top-left origin axis """
+        x = self.container_width / 2 + pos_x - width / 2
+        y = self.container_height / 2 + pos_y - height / 2
+        return x, y
 
-        for value in unique_element_values:
-            try:
-                # Create filter mask
-                indices = np.where(element_id == value)
+    def set_position_values(self, element):
+        """ Set the position values in elements_to_display """
+        x, y = self.convert_position_values(element['pos_x'], element['pos_y'], element['width'], element['height'])
+        element['pos_x'] = int(x)
+        element['pos_y'] = int(y)
 
-                # >>> Width <<< #
-                # Get values that refer to the current element
-                X_width_subset = X_width[indices]
-                Y_width_subset = Y_width[indices]
-                # Train model
-                model_width = LinearRegression()
-                model_width.fit(X_width_subset, Y_width_subset)
-                # Store model
-                self.models_width[value] = model_width
+    def mirror(self):
+        """ Add mirror to element if needed """
+        values = []
+        for e in self.elements_to_display:
 
-                # >>> Height <<< #
-                # Get values that refer to the current element
-                X_height_subset = X_height[indices]
-                Y_height_subset = Y_height[indices]
-                # Train model
-                model_height = LinearRegression()
-                model_height.fit(X_height_subset, Y_height_subset)
-                # Store model
-                self.models_height[value] = model_height
+            if e['element_data'].vertical_mirror:
+                values.append({
+                    'element_data': e['element_data'],
+                    'url': e['element_data'].get_image_url(),
+                    'pos_x': e['pos_x'] * -1,
+                    'pos_y': e['pos_y'],
+                    'width': e['width'],
+                    'height': e['height']
+                })
 
-            except Exception as e:
-                raise Exception(e)
+            elif e['element_data'].horizontal_mirror:
+                values.append({
+                    'element_data': e['element_data'],
+                    'url': e['element_data'].get_image_url(),
+                    'pos_x': e['pos_x'],
+                    'pos_y': e['pos_y'] * -1,
+                    'width': e['width'],
+                    'height': e['height']
+                })
+        # Add to elements_to_display
+        for val in values:
+            self.elements_to_display.append(val)
 
-    def predict(self, width, height, element_id):
-        try:
-            # Get the stored model
-            model_width = self.models_width[element_id]
-            model_height = self.models_height[element_id]
+    def scale(self, element):
+        """ Scaling multiplication """
+        element['pos_x'] *= SimulatorConstants.SCALE
+        element['pos_y'] *= SimulatorConstants.SCALE
+        element['width'] *= SimulatorConstants.SCALE
+        element['height'] *= SimulatorConstants.SCALE
 
-            if model_width and model_height:
-                # Values to predict
-                width = np.array([[width, element_id]])
-                height = np.array([[height, element_id]])
-                # Predict
-                width_predict = model_width.predict(width)[0]
-                height_predict = model_height.predict(height)[0]
-                return width_predict, height_predict
-            else:
-                raise ValueError(f"No model found for type: {element_id}")
-        except Exception as e:
-            raise Exception(e)
+    def is_overlap(self, img1, img2):
+        return img1['pos_x'] + img1['width'] > img2['pos_x'] or img1['pos_y'] + img1['height'] > img2['pos_y']
+
+    def get_overlap_range(self, img1, img2):
+        left, top = img2['pos_x'], img1['pos_y'] if img1['pos_y'] > img2['pos_y'] else img2['pos_y']
+        right, bottom = img1['pos_x'] + img1['width'], img1['pos_y'] + img1['height'] if img1['pos_y'] + img1['height'] < img2['pos_y'] else img2['pos_y'] + img2['height']
+
+    def png_overlap(self):
+        pass
+
+    def check_overlap(self):
+        sorted_elements_x = sorted(self.elements_to_display, key=lambda x: x['pos_x'])
+        sorted_elements_y = sorted(self.elements_to_display, key=lambda x: x['pos_y'])
+
+        for x in range(len(sorted_elements_x) - 1):
+            if self.is_overlap(sorted_elements_x[x], sorted_elements_x[x + 1]):
+                pass
+
+        for y in range(len(sorted_elements_y) - 1):
+            if self.is_overlap(sorted_elements_x[x], sorted_elements_x[x + 1]):
+                pass
+    def simulate(self):
+        self.predict()
+        self.mirror()
+        print('k')
+        for e in self.elements_to_display:
+            self.set_aspect_ratio(e)
+            self.set_position_values(e)
+            self.scale(e)
+        return self.elements_to_display
