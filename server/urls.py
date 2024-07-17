@@ -21,5 +21,6 @@ from marketing_site import urls as marketing_site_urls
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('marketing_site.urls'))
+    path('api/', include('marketing_site.urls')),
+    path('simulator/', include('simulator.urls'))
 ]
