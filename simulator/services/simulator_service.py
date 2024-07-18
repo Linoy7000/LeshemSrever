@@ -1,3 +1,5 @@
+import cv2
+import numpy as np
 
 from server.constants import DIMENSIONS, SimulatorConstants
 from simulator.models import Element
@@ -51,9 +53,11 @@ class Simulator:
 
     def set_position_values(self, element):
         """ Set the position values in elements_to_display """
+        print('-',element)
         x, y = self.convert_position_values(element['pos_x'], element['pos_y'], element['width'], element['height'])
         element['pos_x'] = int(x)
         element['pos_y'] = int(y)
+        print('--', element)
 
     def mirror(self):
         """ Add mirror to element if needed """
@@ -94,11 +98,31 @@ class Simulator:
         return img1['pos_x'] + img1['width'] > img2['pos_x'] or img1['pos_y'] + img1['height'] > img2['pos_y']
 
     def get_overlap_range(self, img1, img2):
-        left, top = img2['pos_x'], img1['pos_y'] if img1['pos_y'] > img2['pos_y'] else img2['pos_y']
-        right, bottom = img1['pos_x'] + img1['width'], img1['pos_y'] + img1['height'] if img1['pos_y'] + img1['height'] < img2['pos_y'] else img2['pos_y'] + img2['height']
+        print(img1, img2)
+        left = img1['pos_x'] if img1['pos_x'] > img2['pos_x'] else img2['pos_x']
+        top = img1['pos_y'] if img1['pos_y'] > img2['pos_y'] else img2['pos_y']
+        right = img1['pos_x'] + img1['width'] if img1['pos_x'] + img1['width'] < img2['pos_x'] + img2['width'] else img2['pos_x'] + img2['width']
+        bottom = img1['pos_y'] + img1['height'] if img1['pos_y'] + img1['height'] < img2['pos_y'] + img2['height'] else img2['pos_y'] + img2['height']
 
-    def png_overlap(self):
-        pass
+        print(top, right, bottom, right)
+        return top, right, bottom, left
+
+    def png_overlap(self, img1, img2):
+        top, right, bottom, left = self.get_overlap_range(img1, img2)
+        print(self.get_overlap_range(img1, img2))
+        image1 = cv2.imread(img1['url'], cv2.IMREAD_UNCHANGED)
+        image2 = cv2.imread(img2['url'], cv2.IMREAD_UNCHANGED)
+        print(top - img1['pos_y'],bottom - img1['pos_y'], left - img1['pos_x'],right - img1['pos_x'])
+        print(top - img2['pos_y'],bottom - img2['pos_y'], left - img2['pos_x'],right - img2['pos_x'])
+        cropped_img1 = image1[top - img1['pos_y']:bottom - img1['pos_y'], left - img1['pos_x']:right - img1['pos_x']]
+        cropped_img2 = image2[top - img2['pos_y']:bottom - img2['pos_y'], left - img2['pos_x']:right - img2['pos_x']]
+
+        alpha1 = cropped_img1[:, :, 3]
+        alpha2 = cropped_img2[:, :, 3]
+
+        overlap = np.logical_and(alpha1 > 0, alpha2 > 0)
+        print(np.any(overlap))
+        return np.any(overlap)
 
     def check_overlap(self):
         sorted_elements_x = sorted(self.elements_to_display, key=lambda x: x['pos_x'])
@@ -106,11 +130,12 @@ class Simulator:
 
         for x in range(len(sorted_elements_x) - 1):
             if self.is_overlap(sorted_elements_x[x], sorted_elements_x[x + 1]):
-                pass
+                self.png_overlap(sorted_elements_x[x], sorted_elements_x[x + 1])
 
         for y in range(len(sorted_elements_y) - 1):
-            if self.is_overlap(sorted_elements_x[x], sorted_elements_x[x + 1]):
-                pass
+            if self.is_overlap(sorted_elements_x[y], sorted_elements_x[y + 1]):
+                self.png_overlap(sorted_elements_x[y], sorted_elements_x[y + 1])
+
     def simulate(self):
         self.predict()
         self.mirror()
@@ -119,4 +144,5 @@ class Simulator:
             self.set_aspect_ratio(e)
             self.set_position_values(e)
             self.scale(e)
+        # self.check_overlap()
         return self.elements_to_display
