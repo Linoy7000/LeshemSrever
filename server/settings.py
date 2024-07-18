@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'shared_models',
     'simulator',
     'bills',
+    'config',
     'rest_framework'
 ]
 
