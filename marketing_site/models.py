@@ -3,7 +3,7 @@ import uuid
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import models
 
-from shared_models.models import Customer
+from bills.models import Customer, Bill
 from server.constants import ProductCategories, OrderStatus, ContactSubject, ContactStatus
 
 # class User(AbstractBaseUser):
@@ -46,6 +46,7 @@ class Order(models.Model):
     supply = models.DateField(blank=True, null=True)
     close_date = models.DateTimeField(blank=True, null=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, blank=True, null=True)
+    bill = models.ForeignKey(Bill, on_delete=models.PROTECT)
 
 
 class OrderItem(models.Model):
