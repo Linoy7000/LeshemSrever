@@ -9,6 +9,9 @@ from simulator.services.training_service import Training
 class Simulator:
 
     def __init__(self, elements_input, container_width, container_height, design):
+
+        #TODO Optional - handle missing elements elements
+
         self.elements = Element.objects.filter(id__in=elements_input)
         self.container_width = container_width
         self.container_height = container_height
@@ -16,7 +19,7 @@ class Simulator:
         self.elements_to_display = []
 
     def predict(self):
-        trainig = Training(self.design)
+        trainig = Training(self.design, self.elements.values_list('id', flat=True))
         for e in self.elements:
             [pos_x, width], [pos_y, height] = trainig.predict(self.container_width, self.container_height, e.id)
             self.elements_to_display.append({
