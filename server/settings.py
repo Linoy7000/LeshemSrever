@@ -118,6 +118,16 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# REST_FRAMEWORK = {
+#     'DEFAULT_THROTTLE_CLASSES': [
+#         'rest_framework.throttling.UserRateThrottle',
+#         'rest_framework.throttling.AnonRateThrottle',
+#     ],
+#     'DEFAULT_THROTTLE_RATES': {
+#         'user': '100/day',  # 100 requests per day per user
+#         'anon': '10/hour',  # 10 requests per hour for anonymous users
+#     }
+# }
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
@@ -147,3 +157,13 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 APPEND_SLASH = True
+
+# Email Settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'linoy70000@gmail.com'
+EMAIL_HOST_PASSWORD = 'crvfohpegkfuuwzx'
+DEFAULT_FROM_EMAIL = 'linoy70000@gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
