@@ -1,3 +1,6 @@
 from django.test import TestCase
 
-# Create your tests here.
+# from server.services.email_service import EmailService
+
+# e = EmailService().send_test_email()
+# print(e)

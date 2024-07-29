@@ -1,13 +1,12 @@
 import uuid
 
-from django.contrib.auth.base_user import AbstractBaseUser
+from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser, PermissionsMixin
 from django.db import models
 
 from bills.models import Customer, Bill
 from server.constants import ProductCategories, OrderStatus, ContactSubject, ContactStatus
 
-# class User(AbstractBaseUser):
-#     first_name = models.CharField()
     
 
 
@@ -82,8 +81,27 @@ class Contact(models.Model):
     def __str__(self):
         return f'{self.name} - {self.subject}'
 
+class WebAppUserManager(BaseUserManager):
 
-class User(AbstractBaseUser):
+    def create_user(self, email, first_name, last_name, password=None, **extra_fields):
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, first_name=first_name, last_name=last_name, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password, **extra_fields):
+        """ Create superuser (for django admin) """
+        user = self.model(email=email, is_active=True, is_superuser=True, is_staff=True, is_admin=True, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+
+
+class WebAppUser(AbstractBaseUser, PermissionsMixin):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     first_name = models.CharField(max_length=255, blank=False)
     last_name = models.CharField(max_length=255, blank=False)
@@ -92,8 +110,17 @@ class User(AbstractBaseUser):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
+    otp_code = models.CharField(max_length=255, blank=True, null=True)
+    otp_expires_at = models.DateTimeField(blank=True, null=True)
+
+    objects = WebAppUserManager()
 
     USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'password']
 
-    # def __str__(self):
-    #     return self.email
+    def __str__(self):
+        return self.email
+
+    @property
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name}"
