@@ -35,6 +35,5 @@ class Bill(models.Model):
     price = models.FloatField(blank=False)
     discount_percentage = models.FloatField(default=0.0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     comments = models.TextField(max_length=255)
-    # order = models.ForeignKey('marketing_site.Order', on_delete=models.CASCADE, related_name='orders')
     date = models.DateField(default=timezone.now)
     payment_method = models.CharField(blank=False, choices=PAYMENT_METHOD, default=1, max_length=50)
