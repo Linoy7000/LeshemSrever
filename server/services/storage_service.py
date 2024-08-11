@@ -79,3 +79,17 @@ class StorageService:
             fileId=folder_id,
             body=permission
         ).execute()
+
+    def get_folder_id(self, folder_name, parent_folder_id=None):
+        query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'"
+        if parent_folder_id:
+            query += f" and '{parent_folder_id}' in parents"
+
+        results = self.service.files().list(q=query, fields="files(id, name)").execute()
+        items = results.get('files', [])
+
+        if not items:
+            print('Folder not found.')
+            return None
+        else:
+            return items
