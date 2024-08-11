@@ -1,10 +1,7 @@
-import datetime
-
 import uuid
 from django.db import models
-from django.utils import timezone
-
 from django.core.validators import MinValueValidator, MaxValueValidator
+from datetime import date
 
 
 class Customer(models.Model):
@@ -34,6 +31,6 @@ class Bill(models.Model):
     quantity = models.PositiveIntegerField(blank=True, default=1)
     price = models.FloatField(blank=False)
     discount_percentage = models.FloatField(default=0.0, validators=[MinValueValidator(0), MaxValueValidator(100)])
-    comments = models.TextField(max_length=255)
-    date = models.DateField(default=timezone.now)
+    comments = models.TextField(blank=True, null=True, max_length=255)
+    date = models.DateField(default=date.today)
     payment_method = models.CharField(blank=False, choices=PAYMENT_METHOD, default=1, max_length=50)
