@@ -20,7 +20,8 @@ class Product(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     category = models.PositiveIntegerField(blank=False, choices=CATEGORY_CHOICES)
     name = models.CharField(max_length=255, blank=False)
-    link = models.CharField(blank=False, max_length=150)
+    url = models.CharField(blank=False, max_length=150)
+    local_link = models.CharField(blank=False, max_length=255, default=1)
     price = models.FloatField(blank=True, null=True)
     cost = models.FloatField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
@@ -28,7 +29,7 @@ class Product(models.Model):
     likes = models.PositiveIntegerField(default=0)
 
     def __str__(self):
-        return f"ID: {self.id} | {self.get_category_display()} - {self.link}"
+        return f"ID: {self.id} | {self.get_category_display()} - {self.url}"
 
 
 class Order(models.Model):
