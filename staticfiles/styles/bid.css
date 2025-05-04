@@ -1,0 +1,116 @@
+  * {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            direction: rtl;
+                        box-sizing: border-box;
+
+        }
+        #bid {
+
+
+
+    position: relative;
+    height: 842px;
+    width: 595px;
+    border: 1px solid black;
+    background-color: aqua;
+}
+
+#bid img {
+    position: absolute;
+    overflow: hidden;
+    width: 595px;
+    height: 842px;
+    z-index: 1;
+}
+
+#bid .bid-header {
+
+    position: absolute;
+    display: flex;
+    justify-content: space-between;
+    background-color: black;
+    height: 100px;
+    width: 100%;
+    z-index: 2;
+    align-items: center;
+    padding: 20px;
+}
+
+
+#bid .bid-header .header-logo {
+    position: absolute;
+    top: 10px;
+    left: 110px;
+}
+
+#bid .bid-header .header-logo img {
+    width: 90px;
+    height: min-content;
+    object-fit: contain;
+    z-index: 3;
+}
+
+#bid .bid-header .header-text {
+    padding: auto;
+    color: aliceblue;
+    width: 80%;
+}
+
+#bid .bid-header .header-text span {
+    font-weight: bold;
+    border-bottom: 1px solid aliceblue;
+    margin-bottom: 20px;
+}
+
+#bid .bid-content {
+    position: absolute;
+    top: 120px;
+    padding-right: 20px;
+    padding-left: 20px;
+    z-index: 2;
+    width: 595px;
+}
+
+#bid .bid-body {
+    display: flex;
+    flex-direction: column;
+    z-index: 2;
+    margin: auto;
+    max-width: 565px;
+}
+
+.text {
+    height: 50px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 10px;
+}
+
+.cont {
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+}
+
+#bid .cont img {
+    position: absolute;
+    object-fit: cover;
+}
+
+#bid .bid-footer {
+    position: absolute;
+    bottom: 0;
+    z-index: 2;
+    width: 100%;
+}
+
+#bid .bid-footer img {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: auto;
+    padding-right: 1.5vw;
+    padding-left: 1.5vw;
+    padding-bottom: 0.5vw;
+    object-fit: contain;
+}

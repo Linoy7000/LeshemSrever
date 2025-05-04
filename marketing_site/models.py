@@ -5,7 +5,7 @@ from django.contrib.auth.models import AbstractUser, PermissionsMixin
 from django.db import models
 
 from bills.models import Customer, Bill
-from server.constants import ProductCategories, OrderStatus, ContactSubject, ContactStatus
+from server.globals.constants import ProductCategories, OrderStatus, ContactSubject, ContactStatus
 
     
 
@@ -20,13 +20,18 @@ class Product(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     category = models.PositiveIntegerField(blank=False, choices=CATEGORY_CHOICES)
     name = models.CharField(max_length=255, blank=False)
-    url = models.CharField(blank=False, max_length=150)
+    url = models.CharField(blank=False, max_length=150, default=".")
     local_link = models.CharField(blank=False, max_length=255, default=1)
-    price = models.FloatField(blank=True, null=True)
-    cost = models.FloatField(blank=True, null=True)
+    price = models.FloatField(blank=True, null=True, default=None)
+    cost = models.FloatField(blank=True, null=True, default=None)
     description = models.TextField(blank=True, null=True)
     sales = models.PositiveIntegerField(default=0)
     likes = models.PositiveIntegerField(default=0)
+    dedication_top = models.PositiveIntegerField(default=65)
+    dedication_left = models.PositiveIntegerField(default=50)
+    pasuk_top = models.PositiveIntegerField(default=10)
+    pasuk_left = models.PositiveIntegerField(default=50)
+    pasuk = models.BooleanField(default=False)
 
     def __str__(self):
         return f"ID: {self.id} | {self.get_category_display()} - {self.url}"
@@ -99,7 +104,6 @@ class WebAppUserManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
-
 
 
 class WebAppUser(AbstractBaseUser, PermissionsMixin):

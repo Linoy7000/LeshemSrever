@@ -5,6 +5,8 @@ from simulator.helpers import get_img_dimensions
 from simulator.services.display_service import DisplayService
 from simulator.services.simulator_service import Simulator
 
-s = Simulator([1, 33,34, 30, 27, 21, 35], 80, 80, 9).simulate()
+# s = Simulator([2, 24, 25, 21, 18, 12, 26], 60, 60, 1).generate('server')
+#
+# DisplayService(60, 60, 4).paste_elements(s)
 
-DisplayService(80, 80).paste_elements(s)
+

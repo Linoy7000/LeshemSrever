@@ -4,8 +4,10 @@ import string
 from django.conf import settings
 from django.core.mail import send_mail
 
-def generate_otp_code():
+
+def generate_code():
     return ''.join(random.choices(string.digits, k=6))
+
 
 def send_email(subject, message, addressee):
     send_mail(

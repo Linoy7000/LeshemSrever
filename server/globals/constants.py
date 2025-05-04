@@ -1,5 +1,12 @@
 
 
+class LogLevel:
+    INFO = 'info'
+    SUCCESS = 'success'
+    WARNING = 'warning'
+    ERROR = 'error'
+
+
 class SimulatorConstants:
     SCALE = 4
 
@@ -7,7 +14,7 @@ class SimulatorConstants:
 class ProductCategories:
     PAROCHET = 1
     SEFER_TORA = 2
-    BIMA = 2
+    BIMA = 3
     OTHER = 4
 
 
@@ -18,10 +25,10 @@ class OrderStatus:
 
 
 class ContactSubject:
-    PAROCHET = 1
-    SEFER_TORA = 2
-    BIMA = 3
-    OTHER = 4
+    PAROCHET = "1"
+    SEFER_TORA = "2"
+    BIMA = "3"
+    OTHER = "4"
 
 
 class ContactStatus:
@@ -35,6 +42,7 @@ class TextPosition:
     LEFT = 3
     CENTER = 4
     TOP = 5
+
 
 class DIMENSIONS:
     WIDTH = "1"

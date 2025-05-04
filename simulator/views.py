@@ -1,85 +1,101 @@
-import io
 
-import numpy as np
 from django.http import HttpResponse
-from django.shortcuts import render
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.response import Response
-import cv2 as cv
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
+from marketing_site.models import Product
+from simulator.models import Element, TrainingData
+from simulator.serializers import ElementSerializer
+from simulator.services.perspective_service import PerspectiveService
+from simulator.services.resolution import ResolutionService
+from simulator.services.simulator_service import Simulator
+
+
+class ElementViewSet(viewsets.ModelViewSet):
+    queryset = Element.objects.all()
+    serializer_class = ElementSerializer
+    lookup_field = 'uuid'
 
 
 @api_view(['POST'])
-def calc_prespective(request):
-
+def calc_perspective(request):
     if request.method == 'POST':
         # Access the request body
         data = request.data
         points = data.get('points')
-        product = data.get('product')
+        category = data.get('category')
+        dimensions = data.get('dimensions')
 
-        if points and product:
-            print(points)
+        response = PerspectiveService(category, points, dimensions).generate()
+        return Response(response, status=status.HTTP_200_OK)
 
 
-            # Clockwise order
-            # if not (points[0]['y'] <= points[3]['y'] and points[0]['x'] >= points[3]['x']):
-            #     points.reverse()
+@api_view(['POST'])
+def generate_simulation(request):
+    if request.method == 'POST':
+        # Access the request body
+        data = request.data
 
-            # Swap elements at index 2 and index 3 - adjust to the indexes below
-            # 1 # 2 #
-            # 3 # 4 #
-            points[2], points[3] = points[3], points[2]
+        elements = data.get('elements')
+        width = data.get('width')
+        height = data.get('height')
+        design = data.get('product')
 
-            # Calc position
-            min_x = min(point['x'] for point in points)
-            min_y = min(point['y'] for point in points)
-            max_x = max(point['x'] for point in points)
-            max_y = max(point['y'] for point in points)
-            print(min_x, min_y, max_x, max_y)
-            values_to_reduce = {
-                'x': min_x,
-                'y': min_y
-            }
-            w = max_x - min_x
-            h = max_y - min_y
-            img = cv.imread('C:/Users/Linoy/project/client/app/src/' + product)
-            assert img is not None, "file could not be read, check with os.path.exists()"
-            resized_img = cv.resize(img, (w, h), interpolation=cv.INTER_AREA)
+        # Generate simulation
+        elements_data, scale = Simulator([item['id'] for item in elements], int(width), int(height), design).generate()
 
-            rows, cols, ch = img.shape
-            converted_points = [list(val - values_to_reduce[key] for key, val in item.items()) for item in points]
+        response_data = []
 
-            pts1 = np.float32([[0, 0], [cols, 0], [0, rows], [cols, rows]])
-            pts2 = np.float32(converted_points)
+        for item in elements_data:
+            element_data = item['element_data']
+            serialized_element = ElementSerializer(element_data).data
+            response_data.append({
+                'element_data': serialized_element,
+                'id': serialized_element['id'],
+                'url': serialized_element['url'],
+                'local_link': serialized_element['local_link'],
+                'pos_x': item['pos_x'],
+                'pos_y': item['pos_y'],
+                'width': item['width'],
+                'height': item['height']
+            })
+        response_data = [response_data, scale]
+        return Response(response_data, status=status.HTTP_200_OK)
 
-            M = cv.getPerspectiveTransform(pts1, pts2)
 
-            matrix = cv.getPerspectiveTransform(pts1, pts2)
+class TrainingView(APIView):
+    def post(self, request):
+        if request.method == 'POST':
+            data = request.data
+            items = data.get('simulationsItems')
+            container = data.get('container')
 
-            # Convert OpenCV matrix to CSS matrix (4x4)
-            matrix_css = [
-                matrix[0, 0], matrix[1, 0], 0, matrix[2, 0],
-                matrix[0, 1], matrix[1, 1], 0, matrix[2, 1],
-                0, 0, 1, 0,
-                matrix[0, 2], matrix[1, 2], 0, matrix[2, 2]
-            ]
-            css_matrix_str = "matrix3d(" + ",".join(["{:.10e}".format(num) for num in matrix_css]) + ")"
+            try:
+                for item in items:
+                    if item:
+                        TrainingData.objects.create(
+                            product=Product.objects.get(id=int(container['product'])),
+                            element=Element.objects.get(local_link=item['local_link']),
+                            container_width=container['width'],
+                            container_height=container['height'],
+                            position_x=(int(item['pos_x']) - int(container['width']) / 2),
+                            position_y=(int(item['pos_y']) - int(container['height']) / 2),
+                            width=item['width'],
+                            height=item['height']
+                        )
+            except Exception as e:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_201_CREATED)
 
-            dst = cv.warpPerspective(img, M, (cols, rows))
 
-            retval, buffer = cv.imencode('.jpg', dst)
-            cv.imshow('k', dst)
-            cv.waitKey(0)  # Waits indefinitely for a key press
-            cv.destroyAllWindows()  # Closes all OpenCV windows
-            return Response({
-                'css_matrix_str': css_matrix_str,
-                'top': min_y,
-                'left': min_x,
-                'width': max_x - min_x,
-                'height': max_y - min_y,
-                'center_x': w/2 + min_x,
-                'canter_y': h/2 + min_y
-            }, status=status.HTTP_200_OK)
+class ResolutionView(APIView):
+    def post(self, request):
 
-        return Response({'error': 'Error'}, status=status.HTTP_400_BAD_REQUEST)
+        if request.method == 'POST' and request.FILES['image']:
+            num_colors = request.POST.get('numColors')
+            image = request.FILES['image']
+            buffer = ResolutionService(image, int(num_colors)).improve_resolution()
+            response = HttpResponse(buffer, content_type="image/png")
+            response['Content-Disposition'] = 'attachment; filename="improved_image.png"'
+            return response

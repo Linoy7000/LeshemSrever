@@ -4,8 +4,12 @@ from datetime import timedelta
 from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.views import TokenObtainPairView
+
 from marketing_site.models import Product, Order, Contact, WebAppUser
-from marketing_site.serializers import ProductSerializer, OrderSerializer, ContactSerializer
+from marketing_site.serializers import ProductSerializer, OrderSerializer, ContactSerializer, \
+    CustomTokenObtainPairSerializer
 
 from rest_framework import generics
 from django.contrib.auth import get_user_model
@@ -14,7 +18,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .helpers import generate_otp_code, send_email
+from .helpers import generate_code, send_email
 from .permissions import ProductsPermission
 from .serializers import RegisterSerializer, ChangePasswordSerializer
 
@@ -49,6 +53,10 @@ class ChangePasswordView(generics.UpdateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+
 class ObtainOTPTokenView(APIView):
 
     def post(self, request, *args, **kwargs):
@@ -62,7 +70,7 @@ class ObtainOTPTokenView(APIView):
         # Check password validation and generate OTP code if Admin
         if user and user.check_password(password) and user.is_admin:
             # Generate random code
-            otp_code = generate_otp_code()
+            otp_code = generate_code()
             # Save code for the current user
             user.otp_code = otp_code
             # Set expire time to 10 minutes
@@ -86,6 +94,7 @@ class VerifyOTPTokenView(APIView):
 
         # Get the current user
         user = WebAppUser.objects.filter(email=email).first()
+
         # Check OTP code validation
         if user and user.otp_code == otp_code and user.otp_expires_at > timezone.now():
             # Generate tokens
@@ -103,6 +112,12 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     lookup_field = 'uuid'
     permission_classes = [ProductsPermission]
+
+    def get_authenticators(self):
+
+        if self.request.method in ['GET']:
+            return []
+        return [JWTAuthentication()]
 
     def get_queryset(self):
         queryset = Product.objects.all()

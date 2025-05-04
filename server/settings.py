@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 import os
+from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -18,7 +19,6 @@ load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -34,8 +34,28 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200"
 ]
-# Application definition
 
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:4200',
+]
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SECURE = False
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'root': {
+#         'handlers': ['console'],
+#         'level': 'DEBUG',
+#     },
+# }
+
+# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -45,11 +65,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'marketing_site',
-    'shared_models',
+    # 'shared_models',
     'simulator',
     'bills',
     'config',
-    'rest_framework'
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'logger',
 ]
 
 MIDDLEWARE = [
@@ -84,7 +106,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'server.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
@@ -98,7 +119,6 @@ DATABASES = {
         'PORT': '3306',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -118,16 +138,32 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# REST_FRAMEWORK = {
-#     'DEFAULT_THROTTLE_CLASSES': [
-#         'rest_framework.throttling.UserRateThrottle',
-#         'rest_framework.throttling.AnonRateThrottle',
-#     ],
-#     'DEFAULT_THROTTLE_RATES': {
-#         'user': '100/day',  # 100 requests per day per user
-#         'anon': '10/hour',  # 10 requests per hour for anonymous users
-#     }
-# }
+REST_FRAMEWORK = {
+
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'user': '500/day',  # 100 requests per day per user
+        'anon': '50/hour',  # 10 requests per hour for anonymous users
+    },
+    # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    # 'PAGE_SIZE': 50
+}
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=120),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': os.getenv('SECRET_KEY'),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+}
+AUTH_USER_MODEL = 'marketing_site.WebAppUser'
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
@@ -150,20 +186,22 @@ STATIC_ROOT = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'staticfiles']
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
+# MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = "D:/images"
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 APPEND_SLASH = True
 
+CORS_ALLOW_ALL_ORIGINS = True
+
 # Email Settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'linoy70000@gmail.com'
-EMAIL_HOST_PASSWORD = 'crvfohpegkfuuwzx'
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = 'linoy70000@gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False

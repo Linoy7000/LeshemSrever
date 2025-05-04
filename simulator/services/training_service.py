@@ -1,8 +1,9 @@
-import logging
-import traceback
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
+
+from logger.models import Log
+from server.globals.constants import LogLevel
 from simulator.models import TrainingData, Element
 
 
@@ -12,6 +13,8 @@ class Training:
 
         # Retrieve only the relevant data by product
         training_data = TrainingData.objects.order_by('id').filter(product__id=design)
+        if not training_data.__len__:
+            return None
 
         # Get values of container\element dimensions, position for the elements
         container_width = np.array(training_data.values_list('container_width', flat=True))
@@ -22,33 +25,39 @@ class Training:
         width = np.array(training_data.values_list('width', flat=True))
         height = np.array(training_data.values_list('height', flat=True))
 
+        # Remove duplicates
         self.unique_element_values = np.unique(element_id)
 
         # Store alternative elements for excluded elements
         self.excluded_elements = {}
 
         for element in elements:
-
             excluded_element = self.is_excluded(element)
+            alternative_element = None
 
             if excluded_element:
                 # Get element type
                 type_id = Element.objects.get(id=excluded_element).type.id
+
                 # Get data of similar elements
-                training_data = training_data.filter(element__type__id=type_id)
-                alternative_element = training_data[0].element.id
-                # Append to the existing data
-                container_width = np.append(container_width, np.array(training_data.values_list('container_width', flat=True)))
-                container_height = np.append(container_height, np.array(training_data.values_list('container_height', flat=True)))
-                element_id = np.append(element_id, np.array(training_data.values_list('element', flat=True)))
-                position_x = np.append(position_x, np.array(training_data.values_list('position_x', flat=True)))
-                position_y = np.append(position_y, np.array(training_data.values_list('position_y', flat=True)))
-                width = np.append(width, np.array(training_data.values_list('width', flat=True)))
-                height = np.append(height, np.array(training_data.values_list('height', flat=True)))
+                alternative_data = training_data.filter(element__type__id=type_id)
 
-                self.unique_element_values = np.append(self.unique_element_values, alternative_element)
+                if alternative_data:
+                    alternative_element = alternative_data[0].element.id
 
-                self.excluded_elements[excluded_element] = alternative_element
+                if alternative_element:
+                    # Append to the existing data
+                    container_width = np.append(container_width, np.array(alternative_data.values_list('container_width', flat=True)))
+                    container_height = np.append(container_height, np.array(alternative_data.values_list('container_height', flat=True)))
+                    element_id = np.append(element_id, np.array(alternative_data.values_list('element', flat=True)))
+                    position_x = np.append(position_x, np.array(alternative_data.values_list('position_x', flat=True)))
+                    position_y = np.append(position_y, np.array(alternative_data.values_list('position_y', flat=True)))
+                    width = np.append(width, np.array(alternative_data.values_list('width', flat=True)))
+                    height = np.append(height, np.array(alternative_data.values_list('height', flat=True)))
+
+                    self.unique_element_values = np.append(self.unique_element_values, alternative_element)
+
+                    self.excluded_elements[excluded_element] = alternative_element
 
         # >>> Width <<< #
         # Independent Variables
@@ -81,6 +90,7 @@ class Training:
                 # Train model
                 model_width = LinearRegression()
                 model_width.fit(X_width_subset, Y_width_subset)
+
                 # Store model
                 self.models_width[value] = model_width
 
@@ -95,6 +105,10 @@ class Training:
                 self.models_height[value] = model_height
 
             except Exception as e:
+                Log.objects.create(
+                    level=LogLevel.ERROR,
+                    payload={"message": str(e)}
+                )
                 raise Exception(e)
 
     def predict(self, width, height, element_id):
@@ -118,10 +132,11 @@ class Training:
             else:
                 raise ValueError(f"No model found for type: {element_id}")
         except KeyError as e:
+            return [0, 50], [0, 50]
+        except Exception as e:
             raise Exception(e)
 
     def is_excluded(self, element):
         if element not in self.unique_element_values:
             return element
         return None
-        

@@ -4,6 +4,7 @@ from PIL import Image, ImageTk
 
 from marketing_site.models import Product
 from simulator.models import Element, TrainingData
+from simulator.services.display_service import DisplayService
 
 SCALE = 4
 
@@ -83,6 +84,10 @@ class EditorService:
 
         save_button = tk.Button(control_panel, text="Save Image", command=self.save_image)
         save_button.place(x=60, y=700, width=100, height=30)
+
+        tk.Label(control_panel, text="Design id:").place(x=20, y=750, width=50, height=20)
+        self.design_entry = tk.Entry(control_panel)
+        self.design_entry.place(x=80, y=750, width=50, height=20)
 
         self.canvas.bind("<Button-1>", self.on_click)
         self.canvas.bind("<B1-Motion>", self.on_drag)
@@ -254,11 +259,10 @@ class EditorService:
 
     def export_data(self):
         for img in self.images_full_data:
-
             try:
                 TrainingData.objects.create(
-                    product=Product.objects.get(link="p1"),
-                    element=Element.objects.get(link=img["id"]),
+                    product=Product.objects.get(id=int(self.design_entry.get())),
+                    element=Element.objects.get(local_link=img["id"]),
                     container_width=self.canvas_width // SCALE,
                     container_height=self.canvas_height // SCALE,
                     position_x=(img["x"] - self.canvas_width / 2) // SCALE,
@@ -270,8 +274,43 @@ class EditorService:
                 return messagebox.showerror("Error", e)
 
         messagebox.showinfo('Done')
+
+    def add_frame(self, color):
+        file_path_sides, file_path = "D:/HHH/SS2.png", "D:/HHH/SS3.png"
+        image1, image2 = Image.open(file_path_sides), Image.open(file_path)
+
+        w1, h1 = image1.size
+        w2, h2 = image2.size
+
+        image1 = image1.resize((int(4 * SCALE), int((4 * SCALE) / w1 * h1)))
+        image2 = image2.resize((int((4 * SCALE) / h2 * w2), int(4 * SCALE)))
+
+        positions = [
+            [(0, 0), 1],
+            [(int(self.canvas_width - (4 * SCALE)), 0), 1],
+            [(0, 0), 2],
+            [(0, int(self.canvas_height - (4 * SCALE))), 2]
+        ]
+        for position in positions:
+            # Rotate the image by 90 degrees clockwise
+            # image = image.rotate(-position[1], expand=True)
+            if position[1] == 1:
+                image = image1
+            else:
+                image = image2
+            tk_image = ImageTk.PhotoImage(image)
+            canvas_image = self.canvas.create_image(position[0][0], position[0][1], anchor=tk.NW, image=tk_image)
+            self.images.append((image, tk_image, canvas_image))
+            self.images_full_data.append(
+                {"image": image,
+                 "id": self.image_id.get() if self.image_id.get() else file_path[file_path.rfind('/') + 1:-4],
+                 "tk_image": tk_image, "canvas_image": canvas_image, "x": position[0][0], "y": position[0][1],
+                 "width": image.width, "height": image.height})
+            # self.frame.paste(rotated_image, position[0], mask=rotated_image.split()[3])
+
     def save_image(self):
-        pass
+        display_service = DisplayService(self.canvas_width, self.canvas_height)
+        display_service.editor_paste_elements(self.images_full_data)
 
 
 if __name__ == "__main__":
